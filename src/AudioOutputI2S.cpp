@@ -1,7 +1,7 @@
 /*
   AudioOutputI2S
   Base class for I2S interface port
-  
+
   Copyright (C) 2017  Earle F. Philhower, III
 
   This program is free software: you can redistribute it and/or modify
@@ -243,10 +243,16 @@ bool AudioOutputI2S::begin(bool txDAC)
 
 bool AudioOutputI2S::ConsumeSample(int16_t sample[2])
 {
+static int counter = 0;
 
   //return if we haven't called ::begin yet
   if (!i2sOn)
     return false;
+
+  if (counter++ == 4096) {
+	  counter = 0;
+	  return false;
+  }
 
   int16_t ms[2];
 
@@ -271,7 +277,7 @@ bool AudioOutputI2S::ConsumeSample(int16_t sample[2])
     {
       s32 = ((Amplify(ms[RIGHTCHANNEL])) << 16) | (Amplify(ms[LEFTCHANNEL]) & 0xffff);
     }
-    return i2s_write_bytes((i2s_port_t)portNo, (const char *)&s32, sizeof(uint32_t), 0);
+    return i2s_write_bytes((i2s_port_t)portNo, (const char *)&s32, sizeof(uint32_t), portMAX_DELAY);
   #elif defined(ESP8266)
     uint32_t s32 = ((Amplify(ms[RIGHTCHANNEL])) << 16) | (Amplify(ms[LEFTCHANNEL]) & 0xffff);
     return i2s_write_sample_nb(s32); // If we can't store it, return false.  OTW true
